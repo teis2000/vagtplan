@@ -102,7 +102,25 @@ A web app for a small DJ booking business. The boss (the user's employer) is dis
 - No database, no login, no real functionality yet
 - PWA manifest is in place (can be added to iPhone home screen)
 
-## What needs to be built next
+## SESSION TO-DO LIST (start here next session)
+
+### User does before next session:
+- [ ] Think about what information a booking needs (DJ, venue, date, time, price, paid/unpaid? anything else?)
+- [ ] Use claude.ai to create a visual mockup of the main booking screen — describe it as a mobile DJ scheduling app, blue/white, Danish language. Screenshot the result to share next session.
+- [ ] Optional: write down the 3 most painful things your boss does manually today (helps us prioritise features)
+
+### We do together next session (in order):
+1. [ ] Set up Supabase database (free) — create tables for DJs, venues and bookings based on the data model we agree on
+2. [ ] Connect the app to the database so data is actually saved
+3. [ ] Build the first real screen — most likely the bookings overview
+4. [ ] Add a simple login/password so the app is protected
+
+### Nice to have (later, not urgent):
+- [ ] Better app icon (not just "VP" — maybe a calendar or music note)
+- [ ] Custom domain name (e.g. vagtplan.dk) instead of the Railway URL
+- [ ] Make the app installable on iPhone properly and test the icon
+
+## What needs to be built (big picture)
 1. Database to store DJs, venues, bookings, pricing
 2. Login system (simple — just for the boss)
 3. DJ management page (add/edit/remove DJs)
