@@ -111,6 +111,14 @@ A web app for a small DJ booking business. The boss (the user's employer) is dis
 
 ## Known issues / lessons learned
 - Next.js 14.2.5 had a security vulnerability (CVE-2025-55184) — upgraded to 14.2.35
-- Railway requires the app to respect the PORT env var — use `next start -p ${PORT:-3000}`
 - `next.config.ts` is not supported in Next.js 14 — must use `next.config.mjs`
-- Docker icons were generated as plain blue squares (no text) — acceptable for now
+- Docker icons were generated as plain blue squares (no text) — fix before showing to anyone
+- **Railway PORT:** Railway assigns its own dynamic PORT (was 8080, not 3000). NEVER assume port 3000. After deploy, check Deploy Logs for the actual port, then update Settings → Networking → target port to match
+- **railway.json interferes with Nixpacks** — do not use railway.json. Let Nixpacks auto-detect Next.js. It handles everything correctly on its own
+- **Debugging Railway:** when app shows "failed to respond", go to Deploy Logs first. "Starting Container" with no further output = app crashed immediately. Look for the port number Next.js reports (e.g. `localhost:8080`) and match it in Networking settings
+
+## User preferences
+- Explain everything in plain non-technical language
+- Be critical and proactive — challenge decisions, flag problems early
+- User is non-technical but wants to understand what's happening and why
+- Quality over speed — do things right, not fast
