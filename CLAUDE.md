@@ -71,3 +71,46 @@ credentials.json, token.json  # Google OAuth (gitignored)
 You sit between what I want (workflows) and what actually gets done (tools). Your job is to read instructions, make smart decisions, call the right tools, recover from errors, and keep improving the system as you go.
 
 Stay pragmatic. Stay reliable. Keep learning.
+
+---
+
+# Project: Vagtplan — DJ Scheduling App
+
+## What this project is
+A web app for a small DJ booking business. The boss (the user's employer) is disorganised and needs a simple tool to manage his DJs, venues, bookings and pricing. This is a private internal tool — not a public product.
+
+## Who uses it
+- The boss: logs in, manages everything (DJs, venues, bookings, prices)
+- Possibly DJs later: view their own schedule (not decided yet)
+
+## Tech stack
+- **Framework:** Next.js 14 (React) + TypeScript + Tailwind CSS
+- **Local dev:** Docker (`docker compose up` → localhost:3000)
+- **Hosting:** Railway (auto-deploys when pushed to GitHub)
+- **GitHub repo:** https://github.com/teis2000/vagtplan
+- **gh CLI:** installed at `~/bin/gh`
+
+## Workflow rules
+- Build and test locally at localhost:3000 first
+- Only push to GitHub (and therefore Railway) when the user says they're happy
+- Never push broken code live
+- Always explain changes in plain non-technical language
+
+## Current state (as of April 2026)
+- Basic Next.js app is live on Railway
+- Shows a static weekly schedule (Mandag–Søndag) — no real data yet
+- No database, no login, no real functionality yet
+- PWA manifest is in place (can be added to iPhone home screen)
+
+## What needs to be built next
+1. Database to store DJs, venues, bookings, pricing
+2. Login system (simple — just for the boss)
+3. DJ management page (add/edit/remove DJs)
+4. Venue management page (add/edit/remove venues with pricing)
+5. Booking/calendar view (who plays where, when, at what price)
+
+## Known issues / lessons learned
+- Next.js 14.2.5 had a security vulnerability (CVE-2025-55184) — upgraded to 14.2.35
+- Railway requires the app to respect the PORT env var — use `next start -p ${PORT:-3000}`
+- `next.config.ts` is not supported in Next.js 14 — must use `next.config.mjs`
+- Docker icons were generated as plain blue squares (no text) — acceptable for now
