@@ -1,11 +1,8 @@
 services:
   web:
-    build:
-      context: .
-      target: deps
-    image: vagtplan-dev
+    image: node:20-alpine
     working_dir: /app
-    command: npm run dev
+    command: sh -c "npm install && npm run dev"
     ports:
       - "3000:3000"
     volumes:
