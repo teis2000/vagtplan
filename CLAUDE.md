@@ -102,71 +102,115 @@ A web app for a small DJ booking business. The boss (the user's employer) is dis
 - **Session 1:** Next.js app live on Railway, Docker local dev, PWA manifest
 - **Session 2:** Supabase connected, tables created (profiles, venues, bookings), Google OAuth login
 - **Session 3:** Role-based routing (boss/dj), DJ shell layout (sidebar + mobile tab bar), Mine vagter screen with real bookings from Supabase (Today/Upcoming/Past sections, orange highlight, duration calc)
+- **Session 4:** Boss shell/layout (light cream theme, sidebar + mobile tabs), booking list grouped by month, add booking form with DJ/venue dropdowns + auto-fill price. Also fixed: `force-dynamic` on all pages, `NEXT_PUBLIC_*` env vars added to Railway, `price` column added to bookings table.
+- **Session 5:** Railway prerender fix (`force-dynamic`), TypeScript fixes for Railway build.
+- **Session 6:** Venue management (`/boss/steder`: add/edit/delete), DJ management (`/boss/djs`: list + invite link + remove), edit/delete bookings (`/boss/vagter/[id]`), booking rows now clickable. Boss can switch to DJ-visning, DJ layout allows boss role.
 
 ### Current file structure (relevant files)
 ```
 src/app/
-  page.tsx              ← root: checks role → redirects to /boss or /dj
-  login/page.tsx        ← Google OAuth login button
-  auth/callback/page.tsx← handles OAuth redirect, fires SIGNED_IN event
-  boss/page.tsx         ← placeholder boss view (auth-guarded, "Boss-visning")
-  dj/layout.tsx         ← DJ shell: dark sidebar desktop + bottom tab bar mobile
-  dj/page.tsx           ← Mine vagter (real bookings, Today/Upcoming/Past)
-  dj/steder/page.tsx    ← placeholder
-  dj/statistik/page.tsx ← placeholder
-  dj/beskeder/page.tsx  ← placeholder
-  dj/profil/page.tsx    ← placeholder
-src/lib/supabase.ts     ← Supabase client (implicit flow)
+  page.tsx                   ← root: checks role → redirects to /boss or /dj
+  login/page.tsx             ← Google OAuth login button
+  auth/callback/page.tsx     ← handles OAuth redirect, fires SIGNED_IN event
+  boss/layout.tsx            ← Boss shell: light cream sidebar + mobile tabs (Vagter, DJs, Steder, Indstillinger)
+  boss/page.tsx              ← All bookings grouped by month, sorted newest first, "Ny vagt" button
+  boss/vagter/ny/page.tsx    ← Add booking form (DJ dropdown, venue dropdown, date, time, price, notes)
+  dj/layout.tsx              ← DJ shell: dark sidebar desktop + bottom tab bar mobile
+  dj/page.tsx                ← Mine vagter (real bookings, Today/Upcoming/Past)
+  dj/steder/page.tsx         ← placeholder
+  dj/statistik/page.tsx      ← placeholder
+  dj/beskeder/page.tsx       ← placeholder
+  dj/profil/page.tsx         ← placeholder
+src/lib/supabase.ts          ← Supabase client (implicit flow)
 ```
 
 ### Supabase tables
 - **profiles** — id (= auth.users.id), full_name, role ('boss' | 'dj')
 - **venues** — id, name, price (numeric)
-- **bookings** — id, dj_id (→ profiles), venue_id (→ venues), date, start_time, end_time, notes
+- **bookings** — id, dj_id (→ profiles), venue_id (→ venues), date, start_time, end_time, notes, price (numeric, nullable — falls back to venue.price)
 
 ### Role logic
 - New user logs in → profile inserted with role = 'dj'
 - root page.tsx checks role and redirects: boss → /boss, dj → /dj
 - To make someone a boss: manually update their row in Supabase: `UPDATE profiles SET role = 'boss' WHERE id = '...'`
 
+### Supabase join syntax
+- Use named foreign key constraint when joining: `profiles!bookings_dj_id_fkey(full_name)`
+- Regular join: `venues(name, price)`
+
 ---
 
-## SESSION 4 — Boss view (next session, start here)
+## SESSION 7 — DJ-oplevelsen (start here next session)
 
-**Goal:** The boss can see all bookings and add new ones.
+**Goal:** DJ-siden er halvfærdig — 4 faner siger "kommer snart". Fix det og gør DJ-oplevelsen komplet.
 
 ### What to build (in order):
-1. **Boss shell/layout** (`src/app/boss/layout.tsx`) — same concept as DJ layout but for boss. Simple top bar with logo + "Log ud", and sidebar/tabs for: Vagter, DJs, Steder, Indstillinger
-2. **Booking list** (`src/app/boss/page.tsx` → rewrite) — table/list of ALL bookings with: DJ name, venue name, date, time, price. Sorted by date descending (newest first). Group by month.
-3. **Add booking form** (`src/app/boss/vagter/ny/page.tsx`) — form with:
-   - DJ dropdown (fetched from profiles where role = 'dj')
-   - Venue dropdown (fetched from venues)
-   - Date picker
-   - Start time / End time
-   - Price (auto-fills from venue.price when venue is selected, but editable)
-   - Notes (optional)
-   - Save button → inserts into bookings table
+1. **Fjern Statistik og Beskeder** fra DJ-navigationen (`dj/layout.tsx` NAV array) — blanke placeholder-sider er værre end ingen faner. Fjern dem nu, tilføj dem igen når de er klar.
+2. **Steder-siden for DJ** (`dj/steder/page.tsx`) — vis de spillesteder DJ'en har haft vagter på. Simpel liste: sted-navn, antal gange spillet der, sidst spillet dato. Data hentes fra bookings-tabellen filtreret på dj_id.
+3. **Profil-siden for DJ** (`dj/profil/page.tsx`) — vis DJ'ens navn (fra profil), Google-konto email (fra auth session). Evt. log ud-knap her i stedet for (eller i tillæg til) sidepanelet.
 
 ### Design language (match existing)
 - Font: `system-ui, -apple-system, sans-serif`
 - Accent: `#FF6E3C` (orange)
-- Background: `#FFFFFF` or `#F9F8F7`
+- DJ theme: dark sidebar `#1A1A1A`, white content area
 - Muted text: `#9B9189`
-- Cards: `#F6F4F1`, borderRadius 14
+- Cards: borderRadius 14
 - No Tailwind — inline styles only
 
-### Nice to have (later, not urgent):
-- [ ] Better app icon (not just "VP" — maybe a calendar or music note)
-- [ ] Custom domain name (e.g. vagtplan.dk) instead of the Railway URL
-- [ ] DJ management page (add/edit/remove DJs)
-- [ ] Venue management page (add/edit/remove venues with pricing)
+---
+
+## SESSION 8 — Dobbeltbooking-check + kalendervisning
+
+**Goal:** Gør systemet smart — forhindre fejl og giv chefen overblik.
+
+### What to build:
+1. **Dobbeltbooking-advarsel** — i "Ny vagt"-formularen: når DJ og dato er valgt, tjek om den DJ allerede har en vagt den dag. Vis en tydelig advarsel (ikke blokér, bare advar).
+2. **Ugevisning** (`/boss/kalender`) — simpel kalender der viser hvem der spiller hvornår. Uge-grid med DJs på tværs. Link fra boss-navigationen (evt. erstat "Vagter" fanen eller tilføj en ny).
+3. **"Hvem er ledig?"**-hjælp — i formularen: når en dato er valgt, vis hvilke DJs der IKKE har en vagt den dag.
+
+---
+
+## SESSION 9 — Boss dashboard + polering
+
+**Goal:** Chefen åbner appen og ser noget nyttigt med det samme.
+
+### What to build:
+1. **Dashboard-widget øverst på /boss** — ikke en ny side, bare øverst på Vagter-siden: "Denne måned: X vagter, Y kr omsætning", "Næste 7 dage: [liste]"
+2. **Login-siden** — teksten "Til DJs og bookingbureauer" er forkert for et internt værktøj. Ret til noget neutralt.
+3. **Mobilgennemgang** — test alle skærme på mobil, fix evt. layoutproblemer.
+4. **App-ikon** — bedre ikon end "VP" (kalender eller musiknode).
+
+---
+
+## SESSION 10 — Custom domæne + Railway-stabile udrulning
+
+- Custom domæne (vagtplan.dk eller lignende)
+- Gennemgang af Railway-konfiguration
+- Evt. Supabase Row Level Security (RLS) — nu er alt åbent, ingen sikkerhed på databaseniveau
+
+---
+
+## Design language (always match this)
+- Font: `system-ui, -apple-system, sans-serif`
+- Accent: `#FF6E3C` (orange)
+- Background: `#FFFFFF` eller `#F9F8F7`
+- Muted text: `#9B9189`
+- Cards: `#F6F4F1`, borderRadius 14
+- Borders: `#E9E6E1`
+- Dark text: `#1C1A18`
+- **No Tailwind — inline styles only**
 
 ## What needs to be built (big picture)
-1. Database to store DJs, venues, bookings, pricing
-2. Login system (simple — just for the boss)
-3. DJ management page (add/edit/remove DJs)
-4. Venue management page (add/edit/remove venues with pricing)
-5. Booking/calendar view (who plays where, when, at what price)
+- [x] Database (profiles, venues, bookings)
+- [x] Login (Google OAuth)
+- [x] DJ management (list, invite, remove)
+- [x] Venue management (add/edit/delete)
+- [x] Booking management (add/edit/delete, grouped by month)
+- [ ] DJ-profil og steder-side
+- [ ] Dobbeltbooking-check
+- [ ] Kalendervisning
+- [ ] Dashboard for boss
+- [ ] Custom domæne
 
 ## Known issues / lessons learned
 - Next.js 14.2.5 had a security vulnerability (CVE-2025-55184) — upgraded to 14.2.35

@@ -77,7 +77,7 @@ export default function DJLayout({ children }: { children: React.ReactNode }) {
         .eq('id', session.user.id)
         .single()
         .then(({ data }) => {
-          if (!data || data.role !== 'dj') { router.replace('/login'); return }
+          if (!data || (data.role !== 'dj' && data.role !== 'boss')) { router.replace('/login'); return }
           setProfile(data)
         })
     })
@@ -152,9 +152,30 @@ export default function DJLayout({ children }: { children: React.ReactNode }) {
             </div>
             <div>
               <div style={{ fontSize: 13, color: 'white', fontWeight: 500 }}>{profile.full_name}</div>
-              <div style={{ fontSize: 11, color: '#9B9189', marginTop: 1 }}>DJ</div>
+              <div style={{ fontSize: 11, color: '#9B9189', marginTop: 1 }}>
+                {profile.role === 'boss' ? 'Boss (DJ-visning)' : 'DJ'}
+              </div>
             </div>
           </div>
+          {profile.role === 'boss' && (
+            <Link href="/boss" style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              marginTop: 12,
+              padding: '8px 10px',
+              borderRadius: 8,
+              background: '#2A2A2A',
+              color: '#9B9189',
+              textDecoration: 'none',
+              fontSize: 12,
+            }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                <path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              Tilbage til Boss-visning
+            </Link>
+          )}
         </div>
       </aside>
 

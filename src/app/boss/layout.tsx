@@ -133,6 +133,23 @@ export default function BossLayout({ children }: { children: React.ReactNode }) 
 
         {/* User footer */}
         <div style={{ padding: '16px 20px 0', borderTop: '1px solid #E9E6E1', marginTop: 16 }}>
+          <Link href="/dj" style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            padding: '8px 10px',
+            borderRadius: 8,
+            background: '#EDEAE6',
+            color: '#5C5650',
+            textDecoration: 'none',
+            fontSize: 12,
+            marginBottom: 12,
+          }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+              <path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            Se DJ-visning
+          </Link>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <div style={{
