@@ -51,7 +51,7 @@ export default function LoginPage() {
         Vagtplan
       </div>
       <div style={{ fontSize: 14, color: '#9B9189', marginBottom: 48 }}>
-        Til DJs og bookingbureauer
+        Booking &amp; vagtplanlægning
       </div>
 
       {/* Google button */}

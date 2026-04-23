@@ -4,8 +4,8 @@
   "description": "Scheduling app",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#f9fafb",
-  "theme_color": "#2563eb",
+  "background_color": "#F9F8F7",
+  "theme_color": "#FF6E3C",
   "icons": [
     {
       "src": "/icon-192.png",
