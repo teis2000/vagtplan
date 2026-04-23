@@ -12,9 +12,11 @@ type Booking = {
   date: string
   start_time: string
   end_time: string
-  profiles: { full_name: string }
+  profiles: { full_name: string } | null
   venues: { name: string }
 }
+
+type DJ = { id: string; full_name: string }
 
 const DAYS_DA = ['Man', 'Tir', 'Ons', 'Tor', 'Fre', 'Lør', 'Søn']
 const MONTHS_DA = ['jan', 'feb', 'mar', 'apr', 'maj', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec']
@@ -46,6 +48,8 @@ export default function KalenderPage() {
   const router = useRouter()
   const [weekStart, setWeekStart] = useState(() => getMonday(new Date()))
   const [bookings, setBookings] = useState<Booking[]>([])
+  const [djs, setDjs] = useState<DJ[]>([])
+  const [assigning, setAssigning] = useState<Record<string, boolean>>({})
   const [loading, setLoading] = useState(true)
 
   const weekEnd = addDays(weekStart, 6)
@@ -56,7 +60,20 @@ export default function KalenderPage() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) { router.replace('/login'); return }
     })
+    supabase.from('profiles').select('id, full_name').eq('role', 'dj').order('full_name')
+      .then(({ data }) => setDjs(data ?? []))
   }, [router])
+
+  const assignDJ = async (bookingId: string, djId: string) => {
+    setAssigning(prev => ({ ...prev, [bookingId]: true }))
+    await supabase.from('bookings').update({ dj_id: djId }).eq('id', bookingId)
+    setBookings(prev => prev.map(b =>
+      b.id === bookingId
+        ? { ...b, profiles: { full_name: djs.find(d => d.id === djId)?.full_name ?? '' } }
+        : b
+    ))
+    setAssigning(prev => ({ ...prev, [bookingId]: false }))
+  }
 
   useEffect(() => {
     setLoading(true)
@@ -186,22 +203,30 @@ export default function KalenderPage() {
                 border: isToday ? '1.5px solid #FF6E3C' : '1px solid #E9E6E1',
                 overflow: 'hidden',
               }}>
-                {/* Day header */}
-                <div style={{
-                  padding: '10px 12px',
-                  borderBottom: '1px solid #F0EDE8',
-                  background: isToday ? '#FFF4EF' : '#F9F8F7',
-                }}>
-                  <div style={{ fontSize: 11, fontWeight: 500, color: isToday ? '#FF6E3C' : '#9B9189', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                    {DAYS_DA[i]}
+                {/* Day header — click to add a shift on this date */}
+                <Link href={`/boss/vagter/ny?date=${iso}`} style={{ textDecoration: 'none', display: 'block' }}>
+                  <div style={{
+                    padding: '10px 12px',
+                    borderBottom: '1px solid #F0EDE8',
+                    background: isToday ? '#FFF4EF' : '#F9F8F7',
+                    cursor: 'pointer',
+                  }}
+                    title="Opret vagt denne dag"
+                  >
+                    <div style={{ fontSize: 11, fontWeight: 500, color: isToday ? '#FF6E3C' : '#9B9189', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                      {DAYS_DA[i]}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
+                      <div style={{ fontSize: 18, fontWeight: 600, color: isToday ? '#FF6E3C' : '#1C1A18', lineHeight: 1.2 }}>
+                        {day.getDate()}
+                        <span style={{ fontSize: 11, fontWeight: 400, color: '#9B9189', marginLeft: 4 }}>
+                          {MONTHS_DA[day.getMonth()]}
+                        </span>
+                      </div>
+                      <span style={{ fontSize: 16, color: isToday ? '#FF6E3C' : '#C8C4BE', lineHeight: 1 }}>+</span>
+                    </div>
                   </div>
-                  <div style={{ fontSize: 18, fontWeight: 600, color: isToday ? '#FF6E3C' : '#1C1A18', lineHeight: 1.2 }}>
-                    {day.getDate()}
-                    <span style={{ fontSize: 11, fontWeight: 400, color: '#9B9189', marginLeft: 4 }}>
-                      {MONTHS_DA[day.getMonth()]}
-                    </span>
-                  </div>
-                </div>
+                </Link>
 
                 {/* Bookings */}
                 <div style={{ padding: 8, display: 'flex', flexDirection: 'column', gap: 6, minHeight: 60 }}>
@@ -210,7 +235,7 @@ export default function KalenderPage() {
                   ) : dayBookings.length === 0 ? (
                     <div style={{ fontSize: 11, color: '#D4D0CB', padding: '4px 0' }}>Tom</div>
                   ) : (
-                    dayBookings.map(b => (
+                    dayBookings.map(b => b.profiles ? (
                       <Link key={b.id} href={`/boss/vagter/${b.id}`} style={{ textDecoration: 'none' }}>
                         <div style={{
                           background: '#FFF4EF',
@@ -228,6 +253,39 @@ export default function KalenderPage() {
                           </div>
                         </div>
                       </Link>
+                    ) : (
+                      <div key={b.id} style={{
+                        background: '#F6F4F1',
+                        border: '1px dashed #C8C4BE',
+                        borderRadius: 8,
+                        padding: '7px 9px',
+                      }}>
+                        <div style={{ fontSize: 11, color: '#9B9189', marginBottom: 2 }}>Ingen DJ</div>
+                        <div style={{ fontSize: 11, color: '#7A6A5F' }}>{b.venues.name}</div>
+                        <div style={{ fontSize: 11, color: '#9B9189', marginTop: 2 }}>
+                          {formatTime(b.start_time)}–{formatTime(b.end_time)}
+                        </div>
+                        <select
+                          value=""
+                          onChange={e => { if (e.target.value) assignDJ(b.id, e.target.value) }}
+                          disabled={assigning[b.id]}
+                          style={{
+                            marginTop: 6,
+                            width: '100%',
+                            padding: '4px 6px',
+                            border: '1px solid #E9E6E1',
+                            borderRadius: 6,
+                            fontSize: 11,
+                            color: '#5C5650',
+                            background: 'white',
+                            cursor: 'pointer',
+                            fontFamily: 'inherit',
+                          }}
+                        >
+                          <option value="">{assigning[b.id] ? 'Tildeler...' : 'Tildel DJ...'}</option>
+                          {djs.map(dj => <option key={dj.id} value={dj.id}>{dj.full_name}</option>)}
+                        </select>
+                      </div>
                     ))
                   )}
                 </div>

@@ -1,12 +1,18 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useEffect, useState, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 
 type DJ = { id: string; full_name: string }
-type Venue = { id: string; name: string; price: number }
+type Venue = {
+  id: string
+  name: string
+  price: number | null
+  default_start_time: string | null
+  default_end_time: string | null
+}
 
 const MONTHS_DA = ['Januar','Februar','Marts','April','Maj','Juni','Juli','August','September','Oktober','November','December']
 const DAYS_DA = ['Ma','Ti','On','To','Fr','Lø','Sø']
@@ -59,8 +65,10 @@ const navBtnStyle: React.CSSProperties = {
   padding: 0,
 }
 
-export default function NyVagtPage() {
+function NyVagtInner() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const lockedDate = searchParams.get('date') // set when coming from calendar
   const today = new Date()
   const todayISO = toISO(today.getFullYear(), today.getMonth(), today.getDate())
 
@@ -76,9 +84,9 @@ export default function NyVagtPage() {
   const [notes, setNotes] = useState('')
 
   // Calendar
-  const [viewYear, setViewYear] = useState(today.getFullYear())
-  const [viewMonth, setViewMonth] = useState(today.getMonth())
-  const [selectedDates, setSelectedDates] = useState<Set<string>>(new Set())
+  const [viewYear, setViewYear] = useState(() => lockedDate ? parseInt(lockedDate.slice(0, 4)) : today.getFullYear())
+  const [viewMonth, setViewMonth] = useState(() => lockedDate ? parseInt(lockedDate.slice(5, 7)) - 1 : today.getMonth())
+  const [selectedDates, setSelectedDates] = useState<Set<string>>(() => lockedDate ? new Set([lockedDate]) : new Set())
   const [conflictDates, setConflictDates] = useState<Set<string>>(new Set())
 
   const [saving, setSaving] = useState(false)
@@ -90,7 +98,7 @@ export default function NyVagtPage() {
     })
     supabase.from('profiles').select('id, full_name').eq('role', 'dj').order('full_name')
       .then(({ data }) => setDjs(data ?? []))
-    supabase.from('venues').select('id, name, price').order('name')
+    supabase.from('venues').select('id, name, price, default_start_time, default_end_time').order('name')
       .then(({ data }) => setVenues(data ?? []))
   }, [router])
 
@@ -107,6 +115,8 @@ export default function NyVagtPage() {
     setVenueId(id)
     const venue = venues.find(v => v.id === id)
     if (venue?.price) setPrice(String(venue.price))
+    if (venue?.default_start_time) setStartTime(venue.default_start_time.slice(0, 5))
+    if (venue?.default_end_time) setEndTime(venue.default_end_time.slice(0, 5))
   }
 
   const prevMonth = () => {
@@ -176,7 +186,7 @@ export default function NyVagtPage() {
         <h1 style={{ fontSize: 20, fontWeight: 600, color: '#1C1A18', margin: 0 }}>Ny vagt</h1>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: 16, alignItems: 'start' }} className="ny-vagt-grid">
+      <div style={{ display: 'grid', gridTemplateColumns: lockedDate ? '320px' : '260px 1fr', gap: 16, alignItems: 'start' }} className="ny-vagt-grid">
 
         {/* ── Left panel ── */}
         <div style={{
@@ -240,20 +250,22 @@ export default function NyVagtPage() {
           </div>
 
           {/* Selection status */}
-          <div style={{
-            padding: '10px 12px',
-            background: n > 0 ? '#FFF4EF' : '#F6F4F1',
-            borderRadius: 8,
-            fontSize: 13,
-            color: n > 0 ? '#FF6E3C' : '#9B9189',
-            fontWeight: n > 0 ? 500 : 400,
-          }}>
-            {n === 0
-              ? 'Klik på datoer i kalenderen →'
-              : `${n} ${n === 1 ? 'dato valgt' : 'datoer valgt'}`}
-          </div>
+          {!lockedDate && (
+            <div style={{
+              padding: '10px 12px',
+              background: n > 0 ? '#FFF4EF' : '#F6F4F1',
+              borderRadius: 8,
+              fontSize: 13,
+              color: n > 0 ? '#FF6E3C' : '#9B9189',
+              fontWeight: n > 0 ? 500 : 400,
+            }}>
+              {n === 0
+                ? 'Klik på datoer i kalenderen →'
+                : `${n} ${n === 1 ? 'dato valgt' : 'datoer valgt'}`}
+            </div>
+          )}
 
-          {conflictsInSelection > 0 && (
+          {!lockedDate && conflictsInSelection > 0 && (
             <div style={{
               display: 'flex',
               gap: 8,
@@ -301,103 +313,144 @@ export default function NyVagtPage() {
           </button>
         </div>
 
-        {/* ── Calendar ── */}
-        <div style={{
-          background: 'white',
-          borderRadius: 14,
-          border: '1px solid #E9E6E1',
-          padding: 20,
-        }}>
-          {/* Month nav */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-            <button onClick={prevMonth} style={navBtnStyle}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                <path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </button>
-            <span style={{ fontSize: 16, fontWeight: 600, color: '#1C1A18' }}>
-              {MONTHS_DA[viewMonth]} {viewYear}
-            </span>
-            <button onClick={nextMonth} style={navBtnStyle}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                <path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </button>
-          </div>
-
-          {/* Day labels */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', marginBottom: 6 }}>
-            {DAYS_DA.map(d => (
-              <div key={d} style={{ textAlign: 'center', fontSize: 11, fontWeight: 500, color: '#9B9189', padding: '4px 0' }}>
-                {d}
-              </div>
-            ))}
-          </div>
-
-          {/* Date cells */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4 }}>
-            {cells.map((day, i) => {
-              if (!day) return <div key={`e-${i}`} />
-              const iso = toISO(viewYear, viewMonth, day)
-              const isSelected = selectedDates.has(iso)
-              const isToday = iso === todayISO
-              const hasConflict = conflictDates.has(iso)
-              const isPast = iso < todayISO
-
-              return (
-                <button
-                  key={iso}
-                  onClick={() => toggleDate(iso)}
-                  style={{
-                    position: 'relative',
-                    aspectRatio: '1',
-                    background: isSelected ? '#FF6E3C' : 'transparent',
-                    color: isSelected ? 'white' : isPast ? '#C8C4BE' : isToday ? '#FF6E3C' : '#1C1A18',
-                    border: isToday && !isSelected ? '1.5px solid #FF6E3C' : '1.5px solid transparent',
-                    borderRadius: 8,
-                    fontSize: 14,
-                    fontWeight: isSelected || isToday ? 600 : 400,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontFamily: 'system-ui, -apple-system, sans-serif',
-                    transition: 'background 0.1s',
-                    padding: 0,
-                  }}
-                >
-                  {day}
-                  {hasConflict && (
-                    <span style={{
-                      position: 'absolute',
-                      bottom: 4,
-                      left: '50%',
-                      transform: 'translateX(-50%)',
-                      width: 4,
-                      height: 4,
-                      borderRadius: '50%',
-                      background: isSelected ? 'rgba(255,255,255,0.7)' : '#FBBF50',
-                    }} />
-                  )}
-                </button>
-              )
-            })}
-          </div>
-
-          {/* Legend */}
-          <div style={{ display: 'flex', gap: 16, marginTop: 16, flexWrap: 'wrap' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#9B9189' }}>
-              <span style={{ width: 16, height: 16, borderRadius: 4, background: '#FF6E3C', display: 'inline-block' }} />
-              Valgt
+        {/* ── Date panel: locked single date OR full multi-select calendar ── */}
+        {lockedDate ? (
+          <div style={{
+            background: '#FFF4EF',
+            borderRadius: 14,
+            border: '1.5px solid #FF6E3C',
+            padding: 20,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 8,
+          }}>
+            <div style={{ fontSize: 12, fontWeight: 500, color: '#FF6E3C', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              Dato (låst)
             </div>
-            {djId && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#9B9189' }}>
-                <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#FBBF50', display: 'inline-block' }} />
-                DJ har allerede vagt
+            <div style={{ fontSize: 22, fontWeight: 700, color: '#1C1A18' }}>
+              {(() => {
+                const d = new Date(lockedDate + 'T12:00:00')
+                const weekdays = ['Søndag','Mandag','Tirsdag','Onsdag','Torsdag','Fredag','Lørdag']
+                const months = ['januar','februar','marts','april','maj','juni','juli','august','september','oktober','november','december']
+                return `${weekdays[d.getDay()]} d. ${d.getDate()}. ${months[d.getMonth()]} ${d.getFullYear()}`
+              })()}
+            </div>
+            {conflictDates.has(lockedDate) && (
+              <div style={{
+                display: 'flex',
+                gap: 8,
+                padding: '10px 12px',
+                background: '#FFF8ED',
+                border: '1px solid #FBBF50',
+                borderRadius: 8,
+                fontSize: 12,
+                color: '#7A5C1A',
+                lineHeight: 1.4,
+                marginTop: 4,
+              }}>
+                <span style={{ flexShrink: 0 }}>⚠️</span>
+                <span>Denne DJ har allerede en vagt denne dag.</span>
               </div>
             )}
           </div>
-        </div>
+        ) : (
+          <div style={{
+            background: 'white',
+            borderRadius: 14,
+            border: '1px solid #E9E6E1',
+            padding: 20,
+          }}>
+            {/* Month nav */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+              <button onClick={prevMonth} style={navBtnStyle}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+              <span style={{ fontSize: 16, fontWeight: 600, color: '#1C1A18' }}>
+                {MONTHS_DA[viewMonth]} {viewYear}
+              </span>
+              <button onClick={nextMonth} style={navBtnStyle}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+            </div>
+
+            {/* Day labels */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', marginBottom: 6 }}>
+              {DAYS_DA.map(d => (
+                <div key={d} style={{ textAlign: 'center', fontSize: 11, fontWeight: 500, color: '#9B9189', padding: '4px 0' }}>
+                  {d}
+                </div>
+              ))}
+            </div>
+
+            {/* Date cells */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4 }}>
+              {cells.map((day, i) => {
+                if (!day) return <div key={`e-${i}`} />
+                const iso = toISO(viewYear, viewMonth, day)
+                const isSelected = selectedDates.has(iso)
+                const isToday = iso === todayISO
+                const hasConflict = conflictDates.has(iso)
+                const isPast = iso < todayISO
+
+                return (
+                  <button
+                    key={iso}
+                    onClick={() => toggleDate(iso)}
+                    style={{
+                      position: 'relative',
+                      aspectRatio: '1',
+                      background: isSelected ? '#FF6E3C' : 'transparent',
+                      color: isSelected ? 'white' : isPast ? '#C8C4BE' : isToday ? '#FF6E3C' : '#1C1A18',
+                      border: isToday && !isSelected ? '1.5px solid #FF6E3C' : '1.5px solid transparent',
+                      borderRadius: 8,
+                      fontSize: 14,
+                      fontWeight: isSelected || isToday ? 600 : 400,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontFamily: 'system-ui, -apple-system, sans-serif',
+                      transition: 'background 0.1s',
+                      padding: 0,
+                    }}
+                  >
+                    {day}
+                    {hasConflict && (
+                      <span style={{
+                        position: 'absolute',
+                        bottom: 4,
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        width: 4,
+                        height: 4,
+                        borderRadius: '50%',
+                        background: isSelected ? 'rgba(255,255,255,0.7)' : '#FBBF50',
+                      }} />
+                    )}
+                  </button>
+                )
+              })}
+            </div>
+
+            {/* Legend */}
+            <div style={{ display: 'flex', gap: 16, marginTop: 16, flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#9B9189' }}>
+                <span style={{ width: 16, height: 16, borderRadius: 4, background: '#FF6E3C', display: 'inline-block' }} />
+                Valgt
+              </div>
+              {djId && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#9B9189' }}>
+                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#FBBF50', display: 'inline-block' }} />
+                  DJ har allerede vagt
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       <style>{`
@@ -408,5 +461,13 @@ export default function NyVagtPage() {
         }
       `}</style>
     </div>
+  )
+}
+
+export default function NyVagtPage() {
+  return (
+    <Suspense>
+      <NyVagtInner />
+    </Suspense>
   )
 }
