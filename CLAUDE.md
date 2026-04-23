@@ -97,28 +97,69 @@ A web app for a small DJ booking business. The boss (the user's employer) is dis
 - Always explain changes in plain non-technical language
 
 ## Current state (as of April 2026)
-- Basic Next.js app is live on Railway
-- Shows a static weekly schedule (Mandag–Søndag) — no real data yet
-- No database, no login, no real functionality yet
-- PWA manifest is in place (can be added to iPhone home screen)
 
-## SESSION TO-DO LIST (start here next session)
+### ✅ Completed
+- **Session 1:** Next.js app live on Railway, Docker local dev, PWA manifest
+- **Session 2:** Supabase connected, tables created (profiles, venues, bookings), Google OAuth login
+- **Session 3:** Role-based routing (boss/dj), DJ shell layout (sidebar + mobile tab bar), Mine vagter screen with real bookings from Supabase (Today/Upcoming/Past sections, orange highlight, duration calc)
 
-### User does before next session:
-- [ ] Think about what information a booking needs (DJ, venue, date, time, price, paid/unpaid? anything else?)
-- [ ] Use claude.ai to create a visual mockup of the main booking screen — describe it as a mobile DJ scheduling app, blue/white, Danish language. Screenshot the result to share next session.
-- [ ] Optional: write down the 3 most painful things your boss does manually today (helps us prioritise features)
+### Current file structure (relevant files)
+```
+src/app/
+  page.tsx              ← root: checks role → redirects to /boss or /dj
+  login/page.tsx        ← Google OAuth login button
+  auth/callback/page.tsx← handles OAuth redirect, fires SIGNED_IN event
+  boss/page.tsx         ← placeholder boss view (auth-guarded, "Boss-visning")
+  dj/layout.tsx         ← DJ shell: dark sidebar desktop + bottom tab bar mobile
+  dj/page.tsx           ← Mine vagter (real bookings, Today/Upcoming/Past)
+  dj/steder/page.tsx    ← placeholder
+  dj/statistik/page.tsx ← placeholder
+  dj/beskeder/page.tsx  ← placeholder
+  dj/profil/page.tsx    ← placeholder
+src/lib/supabase.ts     ← Supabase client (implicit flow)
+```
 
-### We do together next session (in order):
-1. [ ] Set up Supabase database (free) — create tables for DJs, venues and bookings based on the data model we agree on
-2. [ ] Connect the app to the database so data is actually saved
-3. [ ] Build the first real screen — most likely the bookings overview
-4. [ ] Add a simple login/password so the app is protected
+### Supabase tables
+- **profiles** — id (= auth.users.id), full_name, role ('boss' | 'dj')
+- **venues** — id, name, price (numeric)
+- **bookings** — id, dj_id (→ profiles), venue_id (→ venues), date, start_time, end_time, notes
+
+### Role logic
+- New user logs in → profile inserted with role = 'dj'
+- root page.tsx checks role and redirects: boss → /boss, dj → /dj
+- To make someone a boss: manually update their row in Supabase: `UPDATE profiles SET role = 'boss' WHERE id = '...'`
+
+---
+
+## SESSION 4 — Boss view (next session, start here)
+
+**Goal:** The boss can see all bookings and add new ones.
+
+### What to build (in order):
+1. **Boss shell/layout** (`src/app/boss/layout.tsx`) — same concept as DJ layout but for boss. Simple top bar with logo + "Log ud", and sidebar/tabs for: Vagter, DJs, Steder, Indstillinger
+2. **Booking list** (`src/app/boss/page.tsx` → rewrite) — table/list of ALL bookings with: DJ name, venue name, date, time, price. Sorted by date descending (newest first). Group by month.
+3. **Add booking form** (`src/app/boss/vagter/ny/page.tsx`) — form with:
+   - DJ dropdown (fetched from profiles where role = 'dj')
+   - Venue dropdown (fetched from venues)
+   - Date picker
+   - Start time / End time
+   - Price (auto-fills from venue.price when venue is selected, but editable)
+   - Notes (optional)
+   - Save button → inserts into bookings table
+
+### Design language (match existing)
+- Font: `system-ui, -apple-system, sans-serif`
+- Accent: `#FF6E3C` (orange)
+- Background: `#FFFFFF` or `#F9F8F7`
+- Muted text: `#9B9189`
+- Cards: `#F6F4F1`, borderRadius 14
+- No Tailwind — inline styles only
 
 ### Nice to have (later, not urgent):
 - [ ] Better app icon (not just "VP" — maybe a calendar or music note)
 - [ ] Custom domain name (e.g. vagtplan.dk) instead of the Railway URL
-- [ ] Make the app installable on iPhone properly and test the icon
+- [ ] DJ management page (add/edit/remove DJs)
+- [ ] Venue management page (add/edit/remove venues with pricing)
 
 ## What needs to be built (big picture)
 1. Database to store DJs, venues, bookings, pricing
