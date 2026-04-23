@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 
+export const dynamic = 'force-dynamic'
+
 type Booking = {
   id: string
   date: string
@@ -147,14 +149,16 @@ export default function BossPage() {
             overflow: 'hidden',
           }}>
             {group.items.map((b, i) => (
-              <div key={b.id} style={{
+              <Link key={b.id} href={`/boss/vagter/${b.id}`} style={{
                 display: 'grid',
-                gridTemplateColumns: '1fr 1fr 160px 100px',
+                gridTemplateColumns: '1fr 1fr 160px 100px 28px',
                 alignItems: 'center',
                 padding: '14px 18px',
                 borderBottom: i < group.items.length - 1 ? '1px solid #F0EDE8' : 'none',
                 gap: 12,
-              }}>
+                textDecoration: 'none',
+                cursor: 'pointer',
+              }} className="booking-row">
 
                 {/* DJ + date */}
                 <div>
@@ -180,11 +184,21 @@ export default function BossPage() {
                 <div style={{ fontSize: 14, fontWeight: 500, color: '#1C1A18', textAlign: 'right' }}>
                   {displayPrice(b)}
                 </div>
-              </div>
+
+                {/* Edit chevron */}
+                <div style={{ color: '#C5C0BA', display: 'flex', justifyContent: 'flex-end' }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </div>
+              </Link>
             ))}
           </div>
         </div>
       ))}
+      <style>{`
+        .booking-row:hover { background: #FAFAF9; }
+      `}</style>
     </div>
   )
 }
