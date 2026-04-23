@@ -105,6 +105,7 @@ A web app for a small DJ booking business. The boss (the user's employer) is dis
 - **Session 4:** Boss shell/layout (light cream theme, sidebar + mobile tabs), booking list grouped by month, add booking form with DJ/venue dropdowns + auto-fill price. Also fixed: `force-dynamic` on all pages, `NEXT_PUBLIC_*` env vars added to Railway, `price` column added to bookings table.
 - **Session 5:** Railway prerender fix (`force-dynamic`), TypeScript fixes for Railway build.
 - **Session 6:** Venue management (`/boss/steder`: add/edit/delete), DJ management (`/boss/djs`: list + invite link + remove), edit/delete bookings (`/boss/vagter/[id]`), booking rows now clickable. Boss can switch to DJ-visning, DJ layout allows boss role.
+- **Session 7:** DJ experience complete — Statistik + Beskeder tabs removed, Steder page (real data: venues DJ has played, count + last date), Profil page (name, email, log out). View-switch button moved above profile in both layouts for consistency. Mobile fix: boss in DJ-view gets "Boss-visning" link in mobile top bar.
 
 ### Current file structure (relevant files)
 ```
@@ -115,18 +116,19 @@ src/app/
   boss/layout.tsx            ← Boss shell: light cream sidebar + mobile tabs (Vagter, DJs, Steder, Indstillinger)
   boss/page.tsx              ← All bookings grouped by month, sorted newest first, "Ny vagt" button
   boss/vagter/ny/page.tsx    ← Add booking form (DJ dropdown, venue dropdown, date, time, price, notes)
-  dj/layout.tsx              ← DJ shell: dark sidebar desktop + bottom tab bar mobile
+  boss/vagter/[id]/page.tsx  ← Edit/delete booking
+  boss/djs/page.tsx          ← DJ list, invite link, remove
+  boss/steder/page.tsx       ← Venue list, add/edit/delete
+  dj/layout.tsx              ← DJ shell: dark sidebar desktop + bottom tab bar mobile (3 tabs: Mine vagter, Steder, Profil)
   dj/page.tsx                ← Mine vagter (real bookings, Today/Upcoming/Past)
-  dj/steder/page.tsx         ← placeholder
-  dj/statistik/page.tsx      ← placeholder
-  dj/beskeder/page.tsx       ← placeholder
-  dj/profil/page.tsx         ← placeholder
+  dj/steder/page.tsx         ← Venues DJ has played: name, count, last date (real data from bookings)
+  dj/profil/page.tsx         ← DJ name, email, log out button
 src/lib/supabase.ts          ← Supabase client (implicit flow)
 ```
 
 ### Supabase tables
 - **profiles** — id (= auth.users.id), full_name, role ('boss' | 'dj')
-- **venues** — id, name, price (numeric)
+- **venues** — id, name, price (numeric), plus extra columns (contact_person, invoice_email, pay_type, pay_amount, created_by, created_at) — all made nullable/defaulted, not used by app
 - **bookings** — id, dj_id (→ profiles), venue_id (→ venues), date, start_time, end_time, notes, price (numeric, nullable — falls back to venue.price)
 
 ### Role logic
@@ -140,26 +142,7 @@ src/lib/supabase.ts          ← Supabase client (implicit flow)
 
 ---
 
-## SESSION 7 — DJ-oplevelsen (start here next session)
-
-**Goal:** DJ-siden er halvfærdig — 4 faner siger "kommer snart". Fix det og gør DJ-oplevelsen komplet.
-
-### What to build (in order):
-1. **Fjern Statistik og Beskeder** fra DJ-navigationen (`dj/layout.tsx` NAV array) — blanke placeholder-sider er værre end ingen faner. Fjern dem nu, tilføj dem igen når de er klar.
-2. **Steder-siden for DJ** (`dj/steder/page.tsx`) — vis de spillesteder DJ'en har haft vagter på. Simpel liste: sted-navn, antal gange spillet der, sidst spillet dato. Data hentes fra bookings-tabellen filtreret på dj_id.
-3. **Profil-siden for DJ** (`dj/profil/page.tsx`) — vis DJ'ens navn (fra profil), Google-konto email (fra auth session). Evt. log ud-knap her i stedet for (eller i tillæg til) sidepanelet.
-
-### Design language (match existing)
-- Font: `system-ui, -apple-system, sans-serif`
-- Accent: `#FF6E3C` (orange)
-- DJ theme: dark sidebar `#1A1A1A`, white content area
-- Muted text: `#9B9189`
-- Cards: borderRadius 14
-- No Tailwind — inline styles only
-
----
-
-## SESSION 8 — Dobbeltbooking-check + kalendervisning
+## SESSION 8 — Dobbeltbooking-check + kalendervisning (start here next session)
 
 **Goal:** Gør systemet smart — forhindre fejl og giv chefen overblik.
 
