@@ -5,7 +5,14 @@ import { supabase } from '@/lib/supabase'
 
 export const dynamic = 'force-dynamic'
 
-type Venue = { id: string; name: string; price: number | null }
+type Venue = {
+  id: string
+  name: string
+  price: number | null
+  default_start_time: string | null
+  default_end_time: string | null
+  invoice_email: string | null
+}
 
 const inputStyle = {
   width: '100%',
@@ -20,23 +27,39 @@ const inputStyle = {
   boxSizing: 'border-box' as const,
 }
 
+const labelStyle = {
+  fontSize: 12,
+  color: '#9B9189',
+  display: 'block',
+  marginBottom: 6,
+}
+
 export default function BossStederPage() {
   const [venues, setVenues] = useState<Venue[]>([])
   const [loading, setLoading] = useState(true)
   const [showAdd, setShowAdd] = useState(false)
   const [newName, setNewName] = useState('')
   const [newPrice, setNewPrice] = useState('')
+  const [newStartTime, setNewStartTime] = useState('')
+  const [newEndTime, setNewEndTime] = useState('')
+  const [newInvoiceEmail, setNewInvoiceEmail] = useState('')
   const [saving, setSaving] = useState(false)
   const [editId, setEditId] = useState<string | null>(null)
   const [editName, setEditName] = useState('')
   const [editPrice, setEditPrice] = useState('')
+  const [editStartTime, setEditStartTime] = useState('')
+  const [editEndTime, setEditEndTime] = useState('')
+  const [editInvoiceEmail, setEditInvoiceEmail] = useState('')
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [error, setError] = useState('')
 
   useEffect(() => { loadVenues() }, [])
 
   async function loadVenues() {
-    const { data } = await supabase.from('venues').select('id, name, price').order('name')
+    const { data } = await supabase
+      .from('venues')
+      .select('id, name, price, default_start_time, default_end_time, invoice_email')
+      .order('name')
     setVenues(data ?? [])
     setLoading(false)
   }
@@ -48,12 +71,18 @@ export default function BossStederPage() {
     const { error: err } = await supabase.from('venues').insert({
       name: newName.trim(),
       price: newPrice ? parseFloat(newPrice) : null,
+      default_start_time: newStartTime || null,
+      default_end_time: newEndTime || null,
+      invoice_email: newInvoiceEmail.trim() || null,
     })
     if (err) {
       setError(err.message)
     } else {
       setNewName('')
       setNewPrice('')
+      setNewStartTime('')
+      setNewEndTime('')
+      setNewInvoiceEmail('')
       setShowAdd(false)
       await loadVenues()
     }
@@ -66,6 +95,9 @@ export default function BossStederPage() {
     await supabase.from('venues').update({
       name: editName.trim(),
       price: editPrice ? parseFloat(editPrice) : null,
+      default_start_time: editStartTime || null,
+      default_end_time: editEndTime || null,
+      invoice_email: editInvoiceEmail.trim() || null,
     }).eq('id', id)
     setEditId(null)
     setSaving(false)
@@ -84,6 +116,13 @@ export default function BossStederPage() {
     setEditId(v.id)
     setEditName(v.name)
     setEditPrice(v.price?.toString() ?? '')
+    setEditStartTime(v.default_start_time?.slice(0, 5) ?? '')
+    setEditEndTime(v.default_end_time?.slice(0, 5) ?? '')
+    setEditInvoiceEmail(v.invoice_email ?? '')
+  }
+
+  function formatTime(t: string | null) {
+    return t ? t.slice(0, 5) : null
   }
 
   return (
@@ -121,11 +160,10 @@ export default function BossStederPage() {
           border: '1px solid #E9E6E1', padding: 20, marginBottom: 20,
         }}>
           <div style={{ fontSize: 14, fontWeight: 600, color: '#1C1A18', marginBottom: 16 }}>Nyt spillested</div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 180px', gap: 12, marginBottom: 14 }}>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 180px', gap: 12, marginBottom: 12 }}>
             <div>
-              <label style={{ fontSize: 12, color: '#9B9189', display: 'block', marginBottom: 6 }}>
-                Navn <span style={{ color: '#FF6E3C' }}>*</span>
-              </label>
+              <label style={labelStyle}>Navn <span style={{ color: '#FF6E3C' }}>*</span></label>
               <input
                 value={newName}
                 onChange={e => setNewName(e.target.value)}
@@ -136,7 +174,7 @@ export default function BossStederPage() {
               />
             </div>
             <div>
-              <label style={{ fontSize: 12, color: '#9B9189', display: 'block', marginBottom: 6 }}>Standardpris (kr)</label>
+              <label style={labelStyle}>Standardpris (kr)</label>
               <input
                 type="number"
                 value={newPrice}
@@ -147,6 +185,39 @@ export default function BossStederPage() {
               />
             </div>
           </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+            <div>
+              <label style={labelStyle}>Standard spilletid — start</label>
+              <input
+                type="time"
+                value={newStartTime}
+                onChange={e => setNewStartTime(e.target.value)}
+                style={inputStyle}
+              />
+            </div>
+            <div>
+              <label style={labelStyle}>Standard spilletid — slut</label>
+              <input
+                type="time"
+                value={newEndTime}
+                onChange={e => setNewEndTime(e.target.value)}
+                style={inputStyle}
+              />
+            </div>
+          </div>
+
+          <div style={{ marginBottom: 14 }}>
+            <label style={labelStyle}>Faktura-email</label>
+            <input
+              type="email"
+              value={newInvoiceEmail}
+              onChange={e => setNewInvoiceEmail(e.target.value)}
+              placeholder="f.eks. regnskab@rust.dk"
+              style={inputStyle}
+            />
+          </div>
+
           {error && (
             <div style={{ fontSize: 13, color: '#D94F3B', marginBottom: 12 }}>{error}</div>
           )}
@@ -162,7 +233,11 @@ export default function BossStederPage() {
             }}>
               {saving ? 'Gemmer...' : 'Gem sted'}
             </button>
-            <button onClick={() => { setShowAdd(false); setNewName(''); setNewPrice(''); setError('') }} style={{
+            <button onClick={() => {
+              setShowAdd(false)
+              setNewName(''); setNewPrice(''); setNewStartTime(''); setNewEndTime(''); setNewInvoiceEmail('')
+              setError('')
+            }} style={{
               padding: '9px 18px', background: 'none', color: '#9B9189',
               borderRadius: 8, border: '1px solid #E9E6E1',
               fontSize: 14, cursor: 'pointer', fontFamily: 'inherit',
@@ -194,22 +269,59 @@ export default function BossStederPage() {
               borderBottom: i < venues.length - 1 ? '1px solid #F0EDE8' : 'none',
             }}>
               {editId === v.id ? (
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 160px auto', gap: 10, alignItems: 'center' }}>
-                  <input
-                    value={editName}
-                    onChange={e => setEditName(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && saveEdit(v.id)}
-                    autoFocus
-                    style={{ ...inputStyle, border: '1px solid #FF6E3C' }}
-                  />
-                  <input
-                    type="number"
-                    value={editPrice}
-                    onChange={e => setEditPrice(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && saveEdit(v.id)}
-                    placeholder="Pris (kr)"
-                    style={inputStyle}
-                  />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 160px', gap: 10 }}>
+                    <div>
+                      <label style={labelStyle}>Navn</label>
+                      <input
+                        value={editName}
+                        onChange={e => setEditName(e.target.value)}
+                        onKeyDown={e => e.key === 'Enter' && saveEdit(v.id)}
+                        autoFocus
+                        style={{ ...inputStyle, border: '1px solid #FF6E3C' }}
+                      />
+                    </div>
+                    <div>
+                      <label style={labelStyle}>Standardpris (kr)</label>
+                      <input
+                        type="number"
+                        value={editPrice}
+                        onChange={e => setEditPrice(e.target.value)}
+                        placeholder="Pris (kr)"
+                        style={inputStyle}
+                      />
+                    </div>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                    <div>
+                      <label style={labelStyle}>Standard spilletid — start</label>
+                      <input
+                        type="time"
+                        value={editStartTime}
+                        onChange={e => setEditStartTime(e.target.value)}
+                        style={inputStyle}
+                      />
+                    </div>
+                    <div>
+                      <label style={labelStyle}>Standard spilletid — slut</label>
+                      <input
+                        type="time"
+                        value={editEndTime}
+                        onChange={e => setEditEndTime(e.target.value)}
+                        style={inputStyle}
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Faktura-email</label>
+                    <input
+                      type="email"
+                      value={editInvoiceEmail}
+                      onChange={e => setEditInvoiceEmail(e.target.value)}
+                      placeholder="f.eks. regnskab@rust.dk"
+                      style={inputStyle}
+                    />
+                  </div>
                   <div style={{ display: 'flex', gap: 6 }}>
                     <button onClick={() => saveEdit(v.id)} disabled={saving} style={{
                       padding: '8px 14px', background: '#FF6E3C', color: 'white',
@@ -228,8 +340,16 @@ export default function BossStederPage() {
                   <div>
                     <div style={{ fontSize: 14, fontWeight: 500, color: '#1C1A18' }}>{v.name}</div>
                     <div style={{ fontSize: 12, color: '#9B9189', marginTop: 2 }}>
-                      {v.price != null ? v.price.toLocaleString('da-DK') + ' kr standard' : 'Ingen standardpris'}
+                      {v.price != null ? v.price.toLocaleString('da-DK') + ' kr' : 'Ingen standardpris'}
+                      {formatTime(v.default_start_time) && formatTime(v.default_end_time)
+                        ? ` · ${formatTime(v.default_start_time)}–${formatTime(v.default_end_time)}`
+                        : ''}
                     </div>
+                    {v.invoice_email && (
+                      <div style={{ fontSize: 12, color: '#9B9189', marginTop: 1 }}>
+                        Faktura: {v.invoice_email}
+                      </div>
+                    )}
                   </div>
                   <div style={{ display: 'flex', gap: 6 }}>
                     <button onClick={() => startEdit(v)} style={{
