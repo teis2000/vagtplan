@@ -28,26 +28,6 @@ const NAV = [
     ),
   },
   {
-    href: '/dj/statistik',
-    label: 'Statistik',
-    icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-        <rect x="3" y="12" width="4" height="9" rx="1" stroke="currentColor" strokeWidth="1.8"/>
-        <rect x="10" y="7" width="4" height="14" rx="1" stroke="currentColor" strokeWidth="1.8"/>
-        <rect x="17" y="3" width="4" height="18" rx="1" stroke="currentColor" strokeWidth="1.8"/>
-      </svg>
-    ),
-  },
-  {
-    href: '/dj/beskeder',
-    label: 'Beskeder',
-    icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-        <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2v10z" stroke="currentColor" strokeWidth="1.8"/>
-      </svg>
-    ),
-  },
-  {
     href: '/dj/profil',
     label: 'Profil',
     icon: (
@@ -134,6 +114,25 @@ export default function DJLayout({ children }: { children: React.ReactNode }) {
 
         {/* User footer */}
         <div style={{ padding: '16px 20px 0', borderTop: '1px solid #2A2A2A', marginTop: 16 }}>
+          {profile.role === 'boss' && (
+            <Link href="/boss" style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              marginBottom: 12,
+              padding: '8px 10px',
+              borderRadius: 8,
+              background: '#2A2A2A',
+              color: '#9B9189',
+              textDecoration: 'none',
+              fontSize: 12,
+            }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                <path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              Tilbage til Boss-visning
+            </Link>
+          )}
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{
               width: 34,
@@ -157,25 +156,6 @@ export default function DJLayout({ children }: { children: React.ReactNode }) {
               </div>
             </div>
           </div>
-          {profile.role === 'boss' && (
-            <Link href="/boss" style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              marginTop: 12,
-              padding: '8px 10px',
-              borderRadius: 8,
-              background: '#2A2A2A',
-              color: '#9B9189',
-              textDecoration: 'none',
-              fontSize: 12,
-            }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                <path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-              Tilbage til Boss-visning
-            </Link>
-          )}
         </div>
       </aside>
 
@@ -189,10 +169,26 @@ export default function DJLayout({ children }: { children: React.ReactNode }) {
         height: 52,
         background: '#1A1A1A',
         alignItems: 'center',
+        justifyContent: 'space-between',
         padding: '0 20px',
         zIndex: 10,
       }} className="topbar-mobile">
         <span style={{ fontSize: 16, fontWeight: 500, color: 'white' }}>Vagtplan</span>
+        {profile.role === 'boss' && (
+          <Link href="/boss" style={{
+            fontSize: 12,
+            color: '#9B9189',
+            textDecoration: 'none',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 4,
+          }}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+              <path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            Boss-visning
+          </Link>
+        )}
       </div>
 
       {/* Main content */}
