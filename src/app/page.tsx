@@ -1,29 +1,42 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 
 export default function Home() {
-  const [status, setStatus] = useState<'loading' | 'ok' | 'error'>('loading')
+  const router = useRouter()
 
   useEffect(() => {
-    supabase.from('profiles').select('count').then(({ error }) => {
-      setStatus(error ? 'error' : 'ok')
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) {
+        router.replace('/login')
+        return
+      }
+      supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', session.user.id)
+        .single()
+        .then(async ({ data }) => {
+          if (!data) {
+            // First login — create profile
+            await supabase.from('profiles').insert({
+              id: session.user.id,
+              full_name: session.user.user_metadata?.full_name
+                || session.user.user_metadata?.name
+                || session.user.email?.split('@')[0]
+                || 'Ukendt',
+              email: session.user.email || '',
+              role: 'dj',
+            })
+          }
+          const role = data?.role ?? 'dj'
+          if (role === 'boss') router.replace('/boss')
+          else router.replace('/dj')
+        })
     })
-  }, [])
+  }, [router])
 
-  return (
-    <main className="min-h-screen p-4">
-      <header className="mb-6">
-        <h1 className="text-3xl font-bold text-blue-600">Vagtplan</h1>
-        <p className="text-gray-500 text-sm mt-1">Uge 16 · April 2026</p>
-      </header>
-
-      <div className="p-4 rounded-xl border text-sm">
-        {status === 'loading' && <span className="text-gray-400">Forbinder til database...</span>}
-        {status === 'ok' && <span className="text-green-600 font-medium">✓ Database forbundet</span>}
-        {status === 'error' && <span className="text-red-500 font-medium">✗ Kunne ikke forbinde til database</span>}
-      </div>
-    </main>
-  )
+  return null
 }

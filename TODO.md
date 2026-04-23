@@ -1,23 +1,22 @@
 # Vagtplan — To-Do List
 
-Last updated: April 19, 2026
+Last updated: April 20, 2026
 
 ---
 
 ## Before next session (Teis does these)
 
-- [ ] Think about what info a booking needs to store — DJ name, venue, date, time, agreed price, paid or not paid? Anything else? Just write it as a simple list on your phone.
-- [ ] Go to claude.ai and ask it to design a mockup of the main booking screen. Tell it: "Design a mobile-friendly booking overview screen for a DJ scheduling app. Blue and white colours, Danish language." Screenshot the result — we use it as our blueprint.
+- [ ] Go to claude.ai and ask it to design a mockup of the main booking screen. Tell it: "Design a mobile-friendly booking overview screen for a DJ scheduling app. Blue and white colours, Danish language." Screenshot the result — we use it as our blueprint next session.
 - [ ] Optional: write down the 3 most painful things your boss does manually today (helps decide what to build first)
 
 ---
 
 ## Next session (we do together, in this order)
 
-- [ ] Set up Supabase database (free) — create tables for DJs, venues and bookings
-- [ ] Connect the app to the database so data actually saves
-- [ ] Build the first real screen based on the mockup
-- [ ] Add a simple login so the app is password protected
+1. [ ] Build the bookings overview screen (based on the mockup if you have it)
+2. [ ] Add a simple login so the app is password protected
+3. [ ] Test the full flow: log in → see bookings
+4. [ ] Push to Railway when it looks good
 
 ---
 
@@ -40,3 +39,8 @@ Last updated: April 19, 2026
 - [x] Fix PWA icons (proper blue icon with VP text)
 - [x] Set up permissions so Claude Code doesn't ask approval for every command
 - [x] Clean up duplicate CLAUDE.md file
+- [x] Create Supabase project (West EU, free tier, automatic RLS enabled)
+- [x] Build all 8 database tables: profiles, venues, venue_djs, open_dates, availability, bookings, shift_swap_requests, messages
+- [x] Enable Row Level Security (RLS) on all 8 tables with correct access policies
+- [x] Connect app to Supabase — confirmed working (green "Database forbundet" at localhost:3000)
+- [x] Commit database work locally (not yet pushed to Railway)
