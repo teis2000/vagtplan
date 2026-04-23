@@ -132,7 +132,7 @@ export default function MineVagterPage() {
         .order('date', { ascending: true })
         .order('start_time', { ascending: true })
 
-      setBookings((data as Booking[]) ?? [])
+      setBookings((data as unknown as Booking[]) ?? [])
       setLoading(false)
     })
   }, [])
