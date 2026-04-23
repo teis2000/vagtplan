@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useState, Suspense } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 
@@ -65,10 +65,12 @@ const navBtnStyle: React.CSSProperties = {
   padding: 0,
 }
 
-function NyVagtInner() {
+export default function NyVagtPage() {
   const router = useRouter()
-  const searchParams = useSearchParams()
-  const lockedDate = searchParams.get('date') // set when coming from calendar
+  const [lockedDate] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null
+    return new URLSearchParams(window.location.search).get('date')
+  })
   const today = new Date()
   const todayISO = toISO(today.getFullYear(), today.getMonth(), today.getDate())
 
@@ -464,10 +466,3 @@ function NyVagtInner() {
   )
 }
 
-export default function NyVagtPage() {
-  return (
-    <Suspense>
-      <NyVagtInner />
-    </Suspense>
-  )
-}
